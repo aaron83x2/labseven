@@ -11,7 +11,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.room.Room;
 
 import com.example.aaronsandroidlab.databinding.ActivityChatRoomBinding;
 import com.example.aaronsandroidlab.databinding.RecieveMessageBinding;
@@ -21,8 +20,6 @@ import com.google.android.material.snackbar.Snackbar;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 public class ChatRoom extends AppCompatActivity {
 
@@ -159,21 +156,21 @@ public class ChatRoom extends AppCompatActivity {
         //Initialize the chat room model object
         binding.recycleView.setLayoutManager(new LinearLayoutManager(this));
 
-        MessageDatabase db = Room.databaseBuilder(getApplicationContext(), MessageDatabase.class, "database-name").build();
-        mDAO = db.cmDAO();
-
-        if(messages == null)
-        {
-            chatModel.messages.setValue(messages = new ArrayList<>());
-
-            Executor thread = Executors.newSingleThreadExecutor();
-            thread.execute(() ->
-            {
-                messages.addAll( mDAO.getAllMessages() ); //Once you get the data from database
-
-                runOnUiThread( () ->  binding.recycleView.setAdapter( myAdapter )); //You can then load the RecyclerView
-            });
-        }
+//        MessageDatabase db = Room.databaseBuilder(getApplicationContext(), MessageDatabase.class, "database-name").build();
+//        mDAO = db.cmDAO();
+//
+//        if(messages == null)
+//        {
+//            chatModel.messages.setValue(messages = new ArrayList<>());
+//
+//            Executor thread = Executors.newSingleThreadExecutor();
+//            thread.execute(() ->
+//            {
+//                messages.addAll( mDAO.getAllMessages() ); //Once you get the data from database
+//
+//                runOnUiThread( () ->  binding.recycleView.setAdapter( myAdapter )); //You can then load the RecyclerView
+//            });
+//        }
 
 
 

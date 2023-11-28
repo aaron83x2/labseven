@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.room.Room;
 
 import com.example.aaronsandroidlab.databinding.ActivityChatRoomBinding;
 import com.example.aaronsandroidlab.databinding.RecieveMessageBinding;
@@ -20,6 +21,9 @@ import com.google.android.material.snackbar.Snackbar;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 public class ChatRoom extends AppCompatActivity {
 
@@ -39,12 +43,6 @@ public class ChatRoom extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-
-
-
-
-
-
         binding = ActivityChatRoomBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
@@ -55,56 +53,64 @@ public class ChatRoom extends AppCompatActivity {
 
         if (messages == null) {
             chatModel.messages.postValue(messages = new ArrayList<>());
+
+            MessageDatabase db = Room.databaseBuilder(getApplicationContext(), MessageDatabase.class, "ChatMessage").build();
+            mDAO = db.cmDAO();
+
+            Executor thread = Executors.newSingleThreadExecutor();
+            thread.execute( () -> {
+
+                List<ChatMessage> fromDatabase = mDAO.getAllMessages();//return a List
+                messages.addAll(fromDatabase);//this adds all messages from the database
+
+            });
         }
+
+
 
 
         binding.sendButton.setOnClickListener(click -> {
             //Get Text from input
             String msg = binding.textInput.getText().toString();
-
-            //Get Date in time in Simple Format
-            SimpleDateFormat sdf = new SimpleDateFormat("EEEE, dd-MMM-yyyy hh-mm-ss a");
+            SimpleDateFormat sdf = new SimpleDateFormat("EEEE, dd-MMM-yyyy hh-mm-ss a");//Get Date in time in Simple Format
             String currentDateAndTime = sdf.format(new Date());
+            ChatMessage chatmsg = new ChatMessage(msg, currentDateAndTime, true);//New ChatMessage Object
+            messages.add(chatmsg);//Add new Chat Object to the ArrayList
+            myAdapter.notifyItemInserted(messages.size()-1);
+            binding.textInput.setText("");//Clear what was typed
 
-
-            //New ChatMessage Object
-            ChatMessage chatmsg = new ChatMessage(msg, currentDateAndTime, true);
-
-            //Add new Chat Object to the ArrayList
-            messages.add(chatmsg);
-
-//            myAdapter.notifyItemInserted(messages.size()-1);
-
-            //Clear previous text
-            binding.textInput.setText("");
-
+            //Tell Recycler view to update
             myAdapter.notifyDataSetChanged();
+
+            //Add to database on another thread:
+            Executor thread1 = Executors.newSingleThreadExecutor();
+            thread1.execute(( ) -> {
+                //this is on a background thread
+                chatmsg.id = mDAO.insertMessage(chatmsg); //get the ID from the database
+
+            });
 
         });
 
         binding.recieveButton.setOnClickListener(click -> {
             //Get Text from input
             String msg = binding.textInput.getText().toString();
-
-            //Get Date in time in Simple Format
             SimpleDateFormat sdf = new SimpleDateFormat("EEEE, dd-MMM-yyyy hh-mm-ss a");
             String currentDateandTime = sdf.format(new Date());
-
-            //New ChatMessage Object
-            ChatMessage chatmsg = new ChatMessage(msg, currentDateandTime, false);
-
-            //Add new Chat Object to the ArrayList
-            messages.add(chatmsg);
-
-//            myAdapter.notifyItemInserted(messages.size()-1);
+            ChatMessage chatmsg = new ChatMessage(msg, currentDateandTime, false);//New ChatMessage Object
+            messages.add(chatmsg);//Add new Chat Object to the ArrayList
 
             //Clear previous text
             binding.textInput.setText("");
 
             myAdapter.notifyDataSetChanged();
 
+            Executor thread1 = Executors.newSingleThreadExecutor();
+            thread1.execute(( ) -> {
+                //this is on a background thread
+                chatmsg.id = mDAO.insertMessage(chatmsg); //get the ID from the database
 
-
+            });
 
         });
 
@@ -153,24 +159,10 @@ public class ChatRoom extends AppCompatActivity {
 
         });
 
-        //Initialize the chat room model object
-        binding.recycleView.setLayoutManager(new LinearLayoutManager(this));
 
-//        MessageDatabase db = Room.databaseBuilder(getApplicationContext(), MessageDatabase.class, "database-name").build();
-//        mDAO = db.cmDAO();
-//
-//        if(messages == null)
-//        {
-//            chatModel.messages.setValue(messages = new ArrayList<>());
-//
-//            Executor thread = Executors.newSingleThreadExecutor();
-//            thread.execute(() ->
-//            {
-//                messages.addAll( mDAO.getAllMessages() ); //Once you get the data from database
-//
-//                runOnUiThread( () ->  binding.recycleView.setAdapter( myAdapter )); //You can then load the RecyclerView
-//            });
-//        }
+
+        //Initialize the chat room model objectnby
+        binding.recycleView.setLayoutManager(new LinearLayoutManager(this));
 
 
 
@@ -196,12 +188,11 @@ public class ChatRoom extends AppCompatActivity {
 
                             ChatMessage removedMessage = messages.get(position);
 
-//                                Executor thread1 = Executors.newSingleThreadExecutor();
-//                                        thread1.execute(() -> {
-//
-//                                        //delete from database
-//                                        mDAO.deleteMessages(removedMessage);//which chat message to delete?
-//                                });
+                                Executor thread2 = Executors.newSingleThreadExecutor();
+                                        thread2.execute(() -> {
+                                        //delete from database
+                                        mDAO.deleteMessages(removedMessage);
+                                });
 
                                 messages.remove(position);
                                 myAdapter.notifyItemRemoved(position);

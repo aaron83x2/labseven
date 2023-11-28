@@ -7,9 +7,9 @@ import androidx.room.PrimaryKey;
 @Entity
 public class ChatMessage {
 
-    @PrimaryKey
+    @PrimaryKey (autoGenerate = true)
     @ColumnInfo(name = "id")
-    public int id;
+    public long id;
 
     @ColumnInfo(name="messages")
     String message;
